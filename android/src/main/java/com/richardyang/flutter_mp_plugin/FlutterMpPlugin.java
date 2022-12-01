@@ -26,6 +26,20 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler {
   public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
     if (call.method.equals("getPlatformVersion")) {
       result.success("Android " + android.os.Build.VERSION.RELEASE);
+    } else if (call.method.equals("init")) {
+
+    } else if (call.method.equals("getConfig")) {
+
+    } else if (call.method.equals("start")) {
+
+    } else if (call.method.equals("pause")) {
+
+    } else if (call.method.equals("resume")) {
+
+    } else if (call.method.equals("stop")) {
+
+    } else if (call.method.equals("getTextureId")) {
+
     } else {
       result.notImplemented();
     }

@@ -11,7 +11,52 @@ class MethodChannelFlutterMpPlugin extends FlutterMpPluginPlatform {
 
   @override
   Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
+    final version =
+        await methodChannel.invokeMethod<String>('getPlatformVersion');
     return version;
+  }
+
+  @override
+  Future<bool> init(
+      {int trackingType = MP_TRACKING_HOLISTIC,
+      LandMarksCallbackFunction? landMarksCallbackFun}) async {
+    final ret = await methodChannel.invokeMethod<bool>('init', trackingType);
+    // landMarksCallbackFun;  // TODO: callback, how?
+    return ret ?? false;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getConfig() async {
+    final ret =
+        await methodChannel.invokeMethod<Map<String, dynamic>>('getConfig');
+    return ret ?? {};
+  }
+
+  @override
+  Future<bool> start(String sourceInfo, Map<String, dynamic>? config) async {
+    final ret = await methodChannel.invokeMethod<bool>(
+        'start', <String, dynamic>{'sourceInfo': sourceInfo, 'config': config});
+    return ret ?? false;
+  }
+
+  @override
+  Future<void> pause() async {
+    await methodChannel.invokeMethod<void>('pause');
+  }
+
+  @override
+  Future<void> resume() async {
+    await methodChannel.invokeMethod<void>('resume');
+  }
+
+  @override
+  Future<void> stop() async {
+    await methodChannel.invokeMethod<void>('stop');
+  }
+
+  @override
+  Future<int?> getTextureId() async {
+    final ret = await methodChannel.invokeMethod<int>('getTextureId');
+    return ret;
   }
 }
