@@ -2,11 +2,6 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'flutter_mp_plugin_method_channel.dart';
 
-const int MP_TRACKING_HOLISTIC = 0;
-const int MP_TRACKING_FACE = 1;
-const int MP_TRACKING_BODY = 2; // Pose + hand
-const int MP_TRACKING_HAND = 3;
-
 typedef LandMarksCallbackFunction = void Function(
     Map<String, dynamic> landmarks);
 
@@ -38,7 +33,7 @@ abstract class FlutterMpPluginPlatform extends PlatformInterface {
   /// This method is called when the plugin is first initialized
   /// and on every full restart.
   Future<bool> init(
-      {int trackingType = MP_TRACKING_HOLISTIC,
+      {required String trackingType,
       LandMarksCallbackFunction? landMarksCallbackFun}) {
     throw UnimplementedError('init() has not been implemented.');
   }

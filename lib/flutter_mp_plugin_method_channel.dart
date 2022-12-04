@@ -18,9 +18,10 @@ class MethodChannelFlutterMpPlugin extends FlutterMpPluginPlatform {
 
   @override
   Future<bool> init(
-      {int trackingType = MP_TRACKING_HOLISTIC,
+      {required String trackingType,
       LandMarksCallbackFunction? landMarksCallbackFun}) async {
-    final ret = await methodChannel.invokeMethod<bool>('init', trackingType);
+    final ret = await methodChannel.invokeMethod<bool>(
+        'init', <String, dynamic>{'trackingType': trackingType});
     // landMarksCallbackFun;  // TODO: callback, how?
     return ret ?? false;
   }
