@@ -2,19 +2,18 @@ package com.richardyang.flutter_mp_plugin;
 
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.app.Activity;
+import android.content.Context;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.util.Log;
 import android.util.Size;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
+import io.flutter.view.TextureRegistry;
+import io.flutter.plugin.common.EventChannel;
 import com.google.mediapipe.components.CameraHelper;
 import com.google.mediapipe.components.CameraXPreviewHelper;
-import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.components.FrameProcessor;
-import com.google.mediapipe.components.PermissionHelper;
+import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.glutil.EglManager;
 
@@ -33,7 +32,7 @@ interface TrackingType {
 }
 
 interface SourceType {
-  public Boolean init(String config, Activity activity, SurfaceTexture surfaceTexture);
+  public Boolean init(String config, Activity activity, SurfaceTexture surfaceTexture, FrameProcessor processor, ExternalTextureConverter converter);
   public Boolean start();
   public void pause();
   public void resume();
@@ -71,11 +70,9 @@ final class MpTracking {
   // Handles camera access via the {@link CameraX} Jetpack support library.
   protected CameraXPreviewHelper cameraHelper;
 
-  // {@link SurfaceView} that displays the camera-preview frames processed by a MediaPipe graph.
-  private SurfaceView previewDisplayView;
-
   // Creates and manages an {@link EGLContext}.
   private EglManager eglManager;
+
   // Converts the GL_TEXTURE_EXTERNAL_OES texture from Android camera into a regular texture to be
   // consumed by {@link FrameProcessor} and the underlying MediaPipe graph.
   private ExternalTextureConverter converter;
@@ -98,19 +95,24 @@ final class MpTracking {
     } else if (type == "hand") {
       // TODO:
     } else {
-      throw "Unsupported tracking type!";
+      throw new Exception("Unsupported tracking type!");
     }
 
     // Initialize asset manager so that MediaPipe native libraries can access the app assets, e.g.,
     // binary graphs.
-    AndroidAssetUtil.initializeNativeAssetManager(this);
+    AndroidAssetUtil.initializeNativeAssetManager(context);
     eglManager = new EglManager(null);
     processor = new FrameProcessor(
-      this, eglManager.getNativeContext(), this.tracker.graphName(),
+      context, eglManager.getNativeContext(), this.tracker.graphName(),
       this.tracker.inputStreamName(), this.tracker.outputStreamName());
     processor.getVideoSurfaceOutput().setFlipY(FLIP_FRAMES_VERTICALLY);
 
     tracker.attachProcessor(processor);
+
+    // Texture converter to convert OES texture to gl texture, used by camera source
+    converter = new ExternalTextureConverter(eglManager.getContext());
+    converter.setFlipY(FLIP_FRAMES_VERTICALLY);
+    converter.setConsumer(processor);
 
     this.eventSink = new QueuingEventSink();
     this.eventChannel.setStreamHandler(
@@ -127,8 +129,6 @@ final class MpTracking {
         }
       }
     );
-
-    PermissionHelper.checkAndRequestCameraPermissions(this);
   }
 
   Boolean start(String inputInfo, Map<String, Object> trackingConfig) {
@@ -146,7 +146,7 @@ final class MpTracking {
     source.dispose();
     if (info[0] == "camera") {
       source = new SourceCamera();
-      if (!source.init(info[1], this.activity, this.textureEntry.surfaceTexture())) {
+      if (!source.init(info[1], this.activity, this.textureEntry.surfaceTexture(), processor, converter)) {
         source.dispose();
         return false;
       }
