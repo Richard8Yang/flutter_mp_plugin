@@ -32,7 +32,7 @@ abstract class FlutterMpPluginPlatform extends PlatformInterface {
 
   /// This method is called when the plugin is first initialized
   /// and on every full restart.
-  Future<bool> init(
+  Future<int> init(
       {required String trackingType,
       LandMarksCallbackFunction? landMarksCallbackFun}) {
     throw UnimplementedError('init() has not been implemented.');

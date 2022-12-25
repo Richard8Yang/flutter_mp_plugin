@@ -28,11 +28,14 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
   private BinaryMessenger _binaryMessenger;
   private TextureRegistry _textureRegistry;
   private Activity _activity;
-  private final LongSparseArray<MpTracking> _trackers = new LongSparseArray<>();
+  private MpTracking _tracker;
+  private long _textureId;
+  //private final LongSparseArray<MpTracking> _trackers = new LongSparseArray<>();
 
   @Override
   public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
     _binaryMessenger = flutterPluginBinding.getBinaryMessenger();
+    _textureRegistry = flutterPluginBinding.getTextureRegistry();
     _applicationContext = flutterPluginBinding.getApplicationContext();
     _channel = new MethodChannel(_binaryMessenger, "flutter_mp_plugin");
     _channel.setMethodCallHandler(this);
@@ -46,17 +49,25 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
       TextureRegistry.SurfaceTextureEntry handle = _textureRegistry.createSurfaceTexture();
       EventChannel eventChannel = new EventChannel(_binaryMessenger, "landmarks_" + handle.id());
       try {
-        MpTracking tracker = new MpTracking(call.argument("trackingType"),
+        _tracker = new MpTracking(call.argument("trackingType"),
           _applicationContext, _activity, eventChannel, handle);
-        _trackers.put(handle.id(), tracker);
+        _textureId = handle.id();
         result.success(handle.id());
-      } catch (Exception e) {
-        result.error("Failed to create tracker", "Unsupported tracking type!", null);
+      } catch (RuntimeException e) {
+        result.error("Failed to create tracker", e.getMessage(), null);
       }
     } else if (call.method.equals("getConfig")) {
-
+      result.success(_tracker.getConfig());
     } else if (call.method.equals("start")) {
-
+      String sourceInfo = call.argument("sourceInfo");
+      Map<String, Object> config = _tracker.getConfig();
+      if (call.hasArgument("config")) {
+        config = call.argument("config");
+      }
+      if (_tracker.start(sourceInfo, config))
+        result.success(0);
+      else
+        result.error("Failed to start tracker", "Error starting the tracker!", null);
     } else if (call.method.equals("pause")) {
 
     } else if (call.method.equals("resume")) {
@@ -64,7 +75,7 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
     } else if (call.method.equals("stop")) {
 
     } else if (call.method.equals("getTextureId")) {
-
+      result.success(_textureId);
     } else {
       result.notImplemented();
     }

@@ -15,7 +15,6 @@ import com.google.mediapipe.components.PermissionHelper;
 import com.google.mediapipe.glutil.EglManager;
 
 final class SourceCamera implements SourceType {
-  private SurfaceTexture _surfaceTexture;
   private CameraXPreviewHelper _cameraHelper;
   private Activity _activity;
   private CameraHelper.CameraFacing _cameraFacing;
@@ -26,22 +25,23 @@ final class SourceCamera implements SourceType {
   private ExternalTextureConverter _converter;
 
   // config string format: "front/high_resolution"
-  public Boolean init(String config, Activity activity, SurfaceTexture surfaceTexture, FrameProcessor processor, ExternalTextureConverter converter) {
+  public Boolean init(String config, Activity activity, ExternalTextureConverter converter) {
     PermissionHelper.checkAndRequestCameraPermissions(activity);
+
+    Log.d("CameraSrc", config, null);
 
     _cameraFacing = CameraHelper.CameraFacing.BACK;
     _resolution = new Size(1280, 720);
 
     String[] params = config.split("/");
-    if (params.length > 0 && params[0] == "front") {
+    if (params.length > 0 && params[0].equals("front")) {
       _cameraFacing = CameraHelper.CameraFacing.FRONT;
     }
-    if (params.length > 1 && params[1] == "high_resolution") {
+    if (params.length > 1 && params[1].equals("high_resolution")) {
       _resolution = new Size(1920, 1080);
     }
 
     _converter = converter;
-    _surfaceTexture = surfaceTexture;
     _activity = activity;
 
     _cameraHelper = new CameraXPreviewHelper();
@@ -56,11 +56,16 @@ final class SourceCamera implements SourceType {
             isCameraRotated ? _resolution.getWidth() : _resolution.getHeight());
       }
     );
+
+    return true;
   }
 
   public Boolean start() {
-    _cameraHelper.startCamera(_activity, _cameraFacing, _surfaceTexture, _resolution);
-    return true;
+    if (PermissionHelper.cameraPermissionsGranted(_activity)) {
+      _cameraHelper.startCamera(_activity, _cameraFacing, null, _resolution);
+      return true;
+    }
+    return false;
   }
 
   public void pause() {

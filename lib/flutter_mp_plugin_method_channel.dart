@@ -17,13 +17,13 @@ class MethodChannelFlutterMpPlugin extends FlutterMpPluginPlatform {
   }
 
   @override
-  Future<bool> init(
+  Future<int> init(
       {required String trackingType,
       LandMarksCallbackFunction? landMarksCallbackFun}) async {
-    final ret = await methodChannel.invokeMethod<bool>(
+    final ret = await methodChannel.invokeMethod<int>(
         'init', <String, dynamic>{'trackingType': trackingType});
     // landMarksCallbackFun;  // TODO: callback, how?
-    return ret ?? false;
+    return ret ?? -1;
   }
 
   @override
@@ -35,8 +35,11 @@ class MethodChannelFlutterMpPlugin extends FlutterMpPluginPlatform {
 
   @override
   Future<bool> start(String sourceInfo, Map<String, dynamic>? config) async {
-    final ret = await methodChannel.invokeMethod<bool>(
-        'start', <String, dynamic>{'sourceInfo': sourceInfo, 'config': config});
+    var args = <String, dynamic>{'sourceInfo': sourceInfo};
+    if (config != null) {
+      args['config'] = config;
+    }
+    final ret = await methodChannel.invokeMethod<bool>('start', args);
     return ret ?? false;
   }
 
