@@ -29,8 +29,7 @@ interface TrackingType {
   public String outputStreamName();
   public void attachProcessor(FrameProcessor processor);
   public Map<String, Object> getLandmarks();
-  public Map<String, Object> getConfig();
-  public Boolean applyConfig(Map<String, Object> config);
+  public Boolean applyConfig();
 }
 
 interface SourceType {
@@ -84,7 +83,7 @@ final class MpTracking {
   private SourceType source;
   private Activity activity;
 
-  MpTracking(String type, Context context, Activity activity, EventChannel eventChannel, TextureRegistry.SurfaceTextureEntry textureEntry) {
+  MpTracking(String type, Context context, Activity activity, EventChannel eventChannel, TextureRegistry.SurfaceTextureEntry textureEntry, Map<String, Object> options) {
     this.eventChannel = eventChannel;
     this.textureEntry = textureEntry;
     this.activity = activity;
@@ -92,7 +91,34 @@ final class MpTracking {
     Log.d("MpTracker", type, null);
 
     if (type.equals("holistic")) {
-      this.tracker = new TrackingHolistic(false, false, false, false, true, false, true, 0);
+      HolisticTrackingOptions trackingOptions = new HolisticTrackingOptions();
+      if (options != null) {
+        if (options.containsKey("enableHolisticLandmarks")) {
+          trackingOptions.enableHolisticLandmarks((Boolean)options.get("enableHolisticLandmarks"));
+        }
+        if (options.containsKey("refineFaceLandmarks")) {
+          trackingOptions.refineFaceLandmarks((Boolean)options.get("refineFaceLandmarks"));
+        }
+        if (options.containsKey("enableSegmentation")) {
+          trackingOptions.enableSegmentation((Boolean)options.get("enableSegmentation"));
+        }
+        if (options.containsKey("enableFaceLandmarks")) {
+          trackingOptions.enableFaceLandmarks((Boolean)options.get("enableFaceLandmarks"));
+        }
+        if (options.containsKey("enablePoseLandmarks")) {
+          trackingOptions.enablePoseLandmarks((Boolean)options.get("enablePoseLandmarks"));
+        }
+        if (options.containsKey("enableLeftHandLandmarks")) {
+          trackingOptions.enableLeftHandLandmarks((Boolean)options.get("enableLeftHandLandmarks"));
+        }
+        if (options.containsKey("enableRightHandLandmarks")) {
+          trackingOptions.enableRightHandLandmarks((Boolean)options.get("enableRightHandLandmarks"));
+        }
+        if (options.containsKey("enableLandmarksOverlay")) {
+          trackingOptions.enableLandmarksOverlay((Boolean)options.get("enableLandmarksOverlay"));
+        }
+      }
+      this.tracker = new TrackingHolistic(trackingOptions);
     } else if (type.equals("face")) {
       // TODO:
     } else if (type.equals("body")) {
@@ -117,6 +143,9 @@ final class MpTracking {
     processor.getVideoSurfaceOutput().setFlipY(FLIP_FRAMES_VERTICALLY);
 
     tracker.attachProcessor(processor);
+    if (!tracker.applyConfig()) {
+      throw new RuntimeException("Failed to apply tracking config!");
+    }
 
     // Texture converter to convert OES texture to gl texture, used by camera source
     converter = new ExternalTextureConverter(eglManager.getContext());
@@ -140,15 +169,7 @@ final class MpTracking {
     );
   }
 
-  public Map<String, Object> getConfig() {
-    return tracker.getConfig();
-  }
-
-  public boolean start(String inputInfo, Map<String, Object> trackingConfig) {
-    if (!tracker.applyConfig(trackingConfig)) {
-      return false;
-    }
-
+  public boolean start(String inputInfo) {
     // source info can be:
     // 1. camera: "camera::front/high_resolution"
     // 2. TODO: video: "video::http://url.to.video" or "video::/sdcard/path/to/video"

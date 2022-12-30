@@ -9,24 +9,16 @@ class FlutterMpPlugin {
   }
 
   Future<int> init(
-          {String trackingType = "holistic",
-          LandMarksCallbackFunction? landMarksCallbackFun}) =>
-      _mpPluginPlatform.init(
-          trackingType: trackingType,
-          landMarksCallbackFun: landMarksCallbackFun);
-
-  Future<Map<String, dynamic>> getConfig() {
-    return _mpPluginPlatform.getConfig();
-  }
+          {String trackingType = "holistic", Map<String, dynamic>? options}) =>
+      _mpPluginPlatform.init(trackingType: trackingType, options: options);
 
   // source info can be:
   // 1. camera: "camera::front/high_resolution"
   // 2. TODO: video: "video::http://url.to.video" or "video::/sdcard/path/to/video"
   // 3. TODO: image: "image::http://url.to.image" or "image::/sdcard/path/to/image"
   // 4. TODO: screen capture "screen::region/0.0.1080.1920"
-  Future<bool> start(
-      {required String sourceInfo, Map<String, dynamic>? config}) {
-    return _mpPluginPlatform.start(sourceInfo, config);
+  Future<bool> start({required String sourceInfo}) {
+    return _mpPluginPlatform.start(sourceInfo);
   }
 
   Future<void> pause() => _mpPluginPlatform.pause();

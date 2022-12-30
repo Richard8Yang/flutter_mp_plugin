@@ -49,22 +49,22 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
       TextureRegistry.SurfaceTextureEntry handle = _textureRegistry.createSurfaceTexture();
       EventChannel eventChannel = new EventChannel(_binaryMessenger, "landmarks_" + handle.id());
       try {
-        _tracker = new MpTracking(call.argument("trackingType"),
-          _applicationContext, _activity, eventChannel, handle);
+        _tracker = new MpTracking(call.argument("trackingType"), _applicationContext,
+          _activity, eventChannel, handle, call.argument("options"));
         _textureId = handle.id();
         result.success(handle.id());
       } catch (RuntimeException e) {
         result.error("Failed to create tracker", e.getMessage(), null);
       }
     } else if (call.method.equals("getConfig")) {
-      result.success(_tracker.getConfig());
+      //result.success(_tracker.getConfig());
     } else if (call.method.equals("start")) {
       String sourceInfo = call.argument("sourceInfo");
-      Map<String, Object> config = _tracker.getConfig();
+      /*Map<String, Object> config = _tracker.getConfig();
       if (call.hasArgument("config")) {
         config = call.argument("config");
-      }
-      if (_tracker.start(sourceInfo, config))
+      }*/
+      if (_tracker.start(sourceInfo))
         result.success(0);
       else
         result.error("Failed to start tracker", "Error starting the tracker!", null);

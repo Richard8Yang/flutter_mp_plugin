@@ -30,12 +30,20 @@ class _MyAppState extends State<MyApp> {
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      _textureId = await _flutterMpPlugin.init(trackingType: "holistic");
+      _textureId =
+          await _flutterMpPlugin.init(trackingType: "holistic", options: {
+        "enableHolisticLandmarks": true,
+        "refineFaceLandmarks": true,
+        "enableFaceLandmarks": true,
+        "enableLeftHandLandmarks": true,
+        "enableRightHandLandmarks": true,
+        "enableLandmarksOverlay": true,
+      });
       print("Initialized tracker $_textureId");
       if (_textureId >= 0) {
         Future.delayed(const Duration(milliseconds: 100), () async {
           bool succ = await _flutterMpPlugin.start(
-            sourceInfo: "camera::front/medium_resolution",
+            sourceInfo: "camera::back/medium_resolution",
           );
           if (!succ) {
             print("Failed to start the tracker!");

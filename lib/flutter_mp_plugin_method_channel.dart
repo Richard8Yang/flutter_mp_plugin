@@ -18,27 +18,15 @@ class MethodChannelFlutterMpPlugin extends FlutterMpPluginPlatform {
 
   @override
   Future<int> init(
-      {required String trackingType,
-      LandMarksCallbackFunction? landMarksCallbackFun}) async {
-    final ret = await methodChannel.invokeMethod<int>(
-        'init', <String, dynamic>{'trackingType': trackingType});
-    // landMarksCallbackFun;  // TODO: callback, how?
+      {required String trackingType, Map<String, dynamic>? options}) async {
+    final ret = await methodChannel.invokeMethod<int>('init',
+        <String, dynamic>{'trackingType': trackingType, 'options': options});
     return ret ?? -1;
   }
 
   @override
-  Future<Map<String, dynamic>> getConfig() async {
-    final ret =
-        await methodChannel.invokeMethod<Map<String, dynamic>>('getConfig');
-    return ret ?? {};
-  }
-
-  @override
-  Future<bool> start(String sourceInfo, Map<String, dynamic>? config) async {
+  Future<bool> start(String sourceInfo) async {
     var args = <String, dynamic>{'sourceInfo': sourceInfo};
-    if (config != null) {
-      args['config'] = config;
-    }
     final ret = await methodChannel.invokeMethod<bool>('start', args);
     return ret ?? false;
   }
