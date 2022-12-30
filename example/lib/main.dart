@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
       _textureId = await _flutterMpPlugin.init(trackingType: "holistic");
       print("Initialized tracker $_textureId");
       if (_textureId >= 0) {
-        Future.delayed(const Duration(milliseconds: 1000), () async {
+        Future.delayed(const Duration(milliseconds: 100), () async {
           bool succ = await _flutterMpPlugin.start(
             sourceInfo: "camera::front/medium_resolution",
           );

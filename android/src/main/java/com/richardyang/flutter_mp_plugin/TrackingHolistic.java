@@ -12,12 +12,16 @@ import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.framework.AndroidAssetUtil;
 import com.google.mediapipe.framework.Packet;
+import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.framework.PacketCallback;
 import com.google.mediapipe.framework.AndroidPacketCreator;
+import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
+import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
 
 import java.util.Map;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.List;
 
 class LandmarksHandler implements PacketCallback {
   protected boolean _enabled = true;
@@ -56,27 +60,32 @@ final class HolisticLandmarksHandler extends LandmarksHandler {
   @Override
   public void process(Packet packet) {
     if (!_enabled) return;
-    Log.d("Holistic", "Received holistic landmarks packet");
-    /*
-    byte[] landmarksRaw = PacketGetter.getProtoBytes(packet);
+
     try {
-      NormalizedLandmarkList landmarks = NormalizedLandmarkList.parseFrom(landmarksRaw);
-      if (landmarks == null) {
-          Log.d(TAG, "[TS:" + packet.getTimestamp() + "] No hand landmarks.");
-          return;
+      Log.d("Holistic", "==== Got new holistic packet ====");
+      int i = 0;
+      // vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
+      List<List<NormalizedLandmarkList>> multiInstLandmarks = PacketGetter.getProtoVectorVector(packet, NormalizedLandmarkList.parser());
+      for (List<NormalizedLandmarkList> oneInstLandmarks : multiInstLandmarks) {
+        if (oneInstLandmarks.size() < 4) {
+          throw new RuntimeException("Wrong number of landmark types: " + oneInstLandmarks.size());
+        }
+        Log.d("Holistic", "Holistic landmark #" + i + " count " + oneInstLandmarks.size());
+        i++;
+
+        int k = 0;
+        for (NormalizedLandmarkList landmarks : oneInstLandmarks) {
+          Log.d("Holistic", "#" + k + " landmarks count " + landmarks.getLandmarkCount());
+          for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
+            Log.d("Holistic", " \"" + k + "\": " + landmark.getX() + " " + landmark.getY() + " " + landmark.getZ());
+          }
+          k++;
+        }
       }
-      // Note: If hand_presence is false, these landmarks are useless.
-      Log.d(TAG,
-              "[TS:"
-                      + packet.getTimestamp()
-                      + "] #Landmarks for hand: "
-                      + landmarks.getLandmarkCount());
-      Log.d(TAG, getLandmarksDebugString(landmarks));
-    } catch (InvalidProtocolBufferException e) {
-      Log.e(TAG, "Couldn't Exception received - " + e);
+    } catch (Exception e) {
+      Log.e("Holistic", "Couldn't parse landmarks packet, error: " + e);
       return;
     }
-    */
   }
 }
 
