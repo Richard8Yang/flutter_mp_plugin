@@ -43,7 +43,7 @@ class _MyAppState extends State<MyApp> {
       if (_textureId >= 0) {
         Future.delayed(const Duration(milliseconds: 100), () async {
           bool succ = await _flutterMpPlugin.start(
-            sourceInfo: "camera::back/medium_resolution",
+            sourceInfo: "camera::front/medium_resolution",
           );
           if (!succ) {
             print("Failed to start the tracker!");
@@ -82,7 +82,6 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          //child: Text('Running on: $_platformVersion\n'),
           child: Texture(
             textureId: _textureId,
             filterQuality: FilterQuality.medium,

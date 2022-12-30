@@ -199,7 +199,7 @@ final class MpTracking {
   }
 
   boolean setupEGL(SurfaceTexture surfaceTexture) {
-    surfaceTexture.setDefaultBufferSize(1280, 720);
+    surfaceTexture.setDefaultBufferSize(720, 1280);
 
     EGLDisplay eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
     if (eglDisplay == EGL14.EGL_NO_DISPLAY) {

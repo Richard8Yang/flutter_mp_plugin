@@ -51,6 +51,7 @@ final class SourceCamera implements SourceType {
           // previewFrameTexture), and configure the output width and height as the computed
           // display size.
           boolean isCameraRotated = _cameraHelper.isCameraRotated();
+          surfaceTex.setDefaultBufferSize(_resolution.getWidth(), _resolution.getHeight());
           _converter.setSurfaceTextureAndAttachToGLContext(surfaceTex,
             isCameraRotated ? _resolution.getHeight() : _resolution.getWidth(),
             isCameraRotated ? _resolution.getWidth() : _resolution.getHeight());
