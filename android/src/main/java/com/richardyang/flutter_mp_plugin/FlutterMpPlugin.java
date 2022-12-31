@@ -56,8 +56,6 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
       } catch (RuntimeException e) {
         result.error("Failed to create tracker", e.getMessage(), null);
       }
-    } else if (call.method.equals("getConfig")) {
-      //result.success(_tracker.getConfig());
     } else if (call.method.equals("start")) {
       String sourceInfo = call.argument("sourceInfo");
       /*Map<String, Object> config = _tracker.getConfig();
