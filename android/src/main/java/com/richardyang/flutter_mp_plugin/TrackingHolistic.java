@@ -220,25 +220,27 @@ final class TrackingHolistic implements TrackingType {
     _processor.addPacketCallback("multi_holistic_landmarks_array", _landmarksHandlers.get("multi_holistic_landmarks_array"));
     _landmarksHandlers.get("multi_holistic_landmarks_array").enable(_options.enableHolisticLandmarks());
 
-    // vector<mediapipe::NormalizedLandmarkList>
-    final String landmarkTypes[] = {
-      "multi_face_landmarks",
-      "multi_pose_landmarks",
-      "multi_left_hand_landmarks",
-      "multi_right_hand_landmarks",
-      //"multi_pose_world_landmarks"
-    };
-    final boolean landmarkEnabled[] = {
-      _options.enableFaceLandmarks(),
-      _options.enablePoseLandmarks(),
-      _options.enableLeftHandLandmarks(),
-      _options.enableRightHandLandmarks(),
-      //_options.enablePoseWorldLandmarks()
-    };
-    for (int i = 0; i < landmarkTypes.length; ++i) {
-      _landmarksHandlers.put(landmarkTypes[i], new LandmarksHandler());
-      _processor.addPacketCallback(landmarkTypes[i], _landmarksHandlers.get(landmarkTypes[i]));
-      _landmarksHandlers.get(landmarkTypes[i]).enable(landmarkEnabled[i]);
+    if (!_options.enableHolisticLandmarks()) {
+      // vector<mediapipe::NormalizedLandmarkList>
+      final String landmarkTypes[] = {
+        "multi_face_landmarks",
+        "multi_pose_landmarks",
+        "multi_left_hand_landmarks",
+        "multi_right_hand_landmarks",
+        //"multi_pose_world_landmarks"
+      };
+      final boolean landmarkEnabled[] = {
+        _options.enableFaceLandmarks(),
+        _options.enablePoseLandmarks(),
+        _options.enableLeftHandLandmarks(),
+        _options.enableRightHandLandmarks(),
+        //_options.enablePoseWorldLandmarks()
+      };
+      for (int i = 0; i < landmarkTypes.length; ++i) {
+        _landmarksHandlers.put(landmarkTypes[i], new LandmarksHandler());
+        _processor.addPacketCallback(landmarkTypes[i], _landmarksHandlers.get(landmarkTypes[i]));
+        _landmarksHandlers.get(landmarkTypes[i]).enable(landmarkEnabled[i]);
+      }
     }
   }
 
