@@ -7,8 +7,10 @@ class Camera: NSObject {
     var output: AVCaptureVideoDataOutput
 
     init(_ config: String) {
+        var isFront = false
         let params = config.split(separator: Character("/"))
         if (params.count > 0 && params[0] == "front") {
+            isFront = true
             self.device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)!
         } else {
             self.device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)!
@@ -26,7 +28,7 @@ class Camera: NSObject {
         session.sessionPreset = .photo
         if #available(iOS 13, *) {
             session.connections[0].videoOrientation = .portrait
-            session.connections[0].isVideoMirrored = false
+            session.connections[0].isVideoMirrored = isFront
         }
     }
     

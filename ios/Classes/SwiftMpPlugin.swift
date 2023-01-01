@@ -5,7 +5,6 @@ import UIKit
   
   var registry: FlutterTextureRegistry?
   var messenger: FlutterBinaryMessenger?
-  var textureId: Int64 = -1
 
   var tracker: MpTracker?
   var camera: Camera?
@@ -28,28 +27,42 @@ import UIKit
       //let renderToVideo = args["trackingType"] as! Int;
       if (args["options"] != nil) {
         let options = args["options"] as! Dictionary<String, Any>
-        self.tracker = MpTracker(options)
+        self.tracker = MpTracker(self.registry, messenger: self.messenger, options: options)
       } else {
-        self.tracker = MpTracker(nil)
+        self.tracker = MpTracker(self.registry, messenger: self.messenger, options: nil)
       }
-      self.textureId = self.registry!.register(self.tracker!);
-      let eventChannelName: String = "landmarks_" + String(self.textureId)
-      let eventChannel = FlutterEventChannel(name: eventChannelName, binaryMessenger: self.messenger!)
-      self.tracker!.setEventChannel(eventChannel)
       
-      result(self.textureId);
+      result(self.tracker!.getTextureId());
 
     case "start":
       guard let args = call.arguments as? [String : Any] else {
-        result(" arguments error.... ")
+        result("arguments error.... ")
         return;
       }
 
       let sourceInfo = args["sourceInfo"] as! String
-      self.camera = Camera(sourceInfo)
-      self.camera!.setSampleBufferDelegate(self.tracker!)
-      self.camera!.start()
-      self.tracker!.start()
+      let srcParams = sourceInfo.components(separatedBy: "::")
+      if (srcParams.count > 1) {
+        switch srcParams[0] {
+          case "camera":
+            self.camera = Camera(srcParams[1])
+            self.camera!.setSampleBufferDelegate(self.tracker!)
+            self.camera!.start()
+            self.tracker!.start();
+          
+          case "video":
+            result("Video is not supported yet");
+
+          case "image":
+            result("Image is not supported yet");
+
+          case "screen":
+            result("Screen capture is not supported yet");
+
+          default:
+            result("Unsupported source type: " + srcParams[0]);
+        }
+      }
 
       result(true);
 
