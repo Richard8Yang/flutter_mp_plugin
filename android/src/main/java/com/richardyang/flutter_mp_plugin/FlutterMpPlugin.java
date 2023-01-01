@@ -58,14 +58,10 @@ public class FlutterMpPlugin implements FlutterPlugin, MethodCallHandler, Activi
       }
     } else if (call.method.equals("start")) {
       String sourceInfo = call.argument("sourceInfo");
-      /*Map<String, Object> config = _tracker.getConfig();
-      if (call.hasArgument("config")) {
-        config = call.argument("config");
-      }*/
       if (_tracker.start(sourceInfo))
-        result.success(0);
+        result.success(true);
       else
-        result.error("Failed to start tracker", "Error starting the tracker!", null);
+        result.success(false);
     } else if (call.method.equals("pause")) {
 
     } else if (call.method.equals("resume")) {

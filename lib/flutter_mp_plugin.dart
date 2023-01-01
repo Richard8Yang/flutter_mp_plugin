@@ -1,4 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter/services.dart';
+
 import 'flutter_mp_plugin_platform_interface.dart';
+import 'landmark_event.dart';
 
 final FlutterMpPluginPlatform _mpPluginPlatform =
     FlutterMpPluginPlatform.instance;
@@ -29,4 +34,42 @@ class FlutterMpPlugin {
 
   // Surface texture id used by Texture widget
   Future<int?> getTextureId() => _mpPluginPlatform.getTextureId();
+}
+
+class LandmarkEventSubscriber {
+  StreamSubscription<LandmarkEvent>? _subscriber;
+
+  bool subscribe({
+    required int textureId,
+    required Function(LandmarkEvent) onEvent,
+    Function? onError,
+  }) {
+    if (textureId < 0) return false;
+    print("Start listening on channel: landmarks_$textureId");
+    _subscriber = EventChannel("landmarks_$textureId")
+        .receiveBroadcastStream()
+        .map(landmarksToEvent)
+        .listen(onEvent, onError: onError);
+    return _subscriber != null;
+  }
+
+  void unsubscribe() async {
+    if (_subscriber != null) {
+      await _subscriber!.cancel();
+    }
+  }
+
+  LandmarkEvent landmarksToEvent(dynamic event) {
+    //final Map<String, dynamic> map = event as Map<String, dynamic>;
+    switch (event['type']) {
+      case 'holistic':
+        return LandmarkEvent(
+          landmarkType: LandmarkType.holistic,
+          landmarkList: event['landmarks'],
+        );
+
+      default:
+        return LandmarkEvent(landmarkType: LandmarkType.unknown);
+    }
+  }
 }

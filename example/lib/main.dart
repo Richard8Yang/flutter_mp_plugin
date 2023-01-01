@@ -1,8 +1,11 @@
+import 'dart:ffi';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_mp_plugin/flutter_mp_plugin.dart';
+import 'package:flutter_mp_plugin/landmark_event.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,6 +22,7 @@ class _MyAppState extends State<MyApp> {
   int _textureId = 0;
 
   final _flutterMpPlugin = FlutterMpPlugin();
+  final _landmarksSubscriber = LandmarkEventSubscriber();
 
   @override
   void initState() {
@@ -46,13 +50,45 @@ class _MyAppState extends State<MyApp> {
           bool succ = await _flutterMpPlugin.start(
             sourceInfo: "camera::front/medium_resolution",
           );
-          if (!succ) {
+          if (succ) {
+            _landmarksSubscriber.subscribe(
+              textureId: _textureId,
+              onEvent: handleLandmarkEvent,
+            );
+          } else {
             print("Failed to start the tracker!");
           }
         });
       }
     } catch (e) {
       print(e);
+    }
+  }
+
+  void handleLandmarkEvent(LandmarkEvent event) {
+    switch (event.landmarkType) {
+      case LandmarkType.holistic:
+        print("==== Got new holistic packet ====");
+        int index = 0;
+        for (final element in event.landmarkList!) {
+          //final oneHolistic = element as Map<String, List>;
+          print("Holistic landmark #$index count ${element.length}");
+          element.forEach((type, list) {
+            final int count = list.length ~/ 3;
+            print("$type landmarks count $count");
+            for (int i = 0; i < list.length; i += 3) {
+              final x = list[i + 0];
+              final y = list[i + 1];
+              final z = list[i + 2];
+              print(" \"$type\": $x $y $z");
+            }
+          });
+          index++;
+        }
+        break;
+
+      default:
+        break;
     }
   }
 
@@ -90,5 +126,12 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _landmarksSubscriber.unsubscribe();
+    //_flutterMpPlugin.dispose();
+    super.dispose();
   }
 }

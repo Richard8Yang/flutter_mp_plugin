@@ -2,6 +2,8 @@ package com.richardyang.flutter_mp_plugin;
 
 import io.flutter.plugin.common.EventChannel;
 import java.util.ArrayList;
+import android.os.Handler;
+import android.os.Looper;
 
 /**
  * An implementation of {@link EventChannel.EventSink} which can wrap an underlying sink.
@@ -16,6 +18,7 @@ final class QueuingEventSink implements EventChannel.EventSink {
   private EventChannel.EventSink delegate;
   private ArrayList<Object> eventQueue = new ArrayList<>();
   private boolean done = false;
+  private Handler uiThreadHandler = new Handler(Looper.getMainLooper());
 
   public void setDelegate(EventChannel.EventSink delegate) {
     this.delegate = delegate;
@@ -52,17 +55,22 @@ final class QueuingEventSink implements EventChannel.EventSink {
     if (delegate == null) {
       return;
     }
-    for (Object event : eventQueue) {
-      if (event instanceof EndOfStreamEvent) {
-        delegate.endOfStream();
-      } else if (event instanceof ErrorEvent) {
-        ErrorEvent errorEvent = (ErrorEvent) event;
-        delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
-      } else {
-        delegate.success(event);
+    uiThreadHandler.post(new Runnable() {
+      @Override
+      public void run() {
+        for (Object event : eventQueue) {
+          if (event instanceof EndOfStreamEvent) {
+            delegate.endOfStream();
+          } else if (event instanceof ErrorEvent) {
+            ErrorEvent errorEvent = (ErrorEvent) event;
+            delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
+          } else {
+            delegate.success(event);
+          }
+        }
+        eventQueue.clear();
       }
-    }
-    eventQueue.clear();
+    });
   }
 
   private static class EndOfStreamEvent {}

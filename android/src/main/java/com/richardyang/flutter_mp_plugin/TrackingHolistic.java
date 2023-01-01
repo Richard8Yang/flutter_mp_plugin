@@ -22,13 +22,17 @@ import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
 
 import java.util.Map;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
 class LandmarksHandler implements PacketCallback {
   protected boolean _enabled = true;
+  protected QueuingEventSink _eventSink = null;
 
   public void enable(boolean enabled) { _enabled = enabled; }
+  public void setEventSink(QueuingEventSink eventSink) { _eventSink = eventSink; }
 
   @Override
   public void process(Packet packet) {
@@ -72,31 +76,34 @@ final class WorldLandmarksHandler extends LandmarksHandler {
 // For each output landmark stream we must assign corresponding callback
 // Refer to the link for available streams: https://github.com/google/mediapipe/blob/master/mediapipe/graphs/holistic_tracking/holistic_tracking_gpu.pbtxt
 final class HolisticLandmarksHandler extends LandmarksHandler {
+  static List<String> HOLISTIC_COMPONENTS = Arrays.asList("face", "pose", "lefthand", "righthand");
+
   @Override
   public void process(Packet packet) {
     if (!_enabled) return;
 
     try {
-      Log.d("Holistic", "==== Got new holistic packet ====");
-      int i = 0;
+      List<Object> landmarksArray = new ArrayList<>();
       // vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
       List<List<NormalizedLandmarkList>> multiInstLandmarks = PacketGetter.getProtoVectorVector(packet, NormalizedLandmarkList.parser());
       for (List<NormalizedLandmarkList> oneInstLandmarks : multiInstLandmarks) {
-        if (oneInstLandmarks.size() < 4) {
-          throw new RuntimeException("Wrong number of landmark types: " + oneInstLandmarks.size());
-        }
-        Log.d("Holistic", "Holistic landmark #" + i + " count " + oneInstLandmarks.size());
-        i++;
-
-        int k = 0;
-        for (NormalizedLandmarkList landmarks : oneInstLandmarks) {
-          Log.d("Holistic", "#" + k + " landmarks count " + landmarks.getLandmarkCount());
+        Map<String, Object> holisticComponents = new HashMap<>();
+        for (int i = 0; i < oneInstLandmarks.size(); i++) {
+          List<Float> flattenedCoords = new ArrayList<Float>();
+          NormalizedLandmarkList landmarks = oneInstLandmarks.get(i);
           for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
-            Log.d("Holistic", " \"" + k + "\": " + landmark.getX() + " " + landmark.getY() + " " + landmark.getZ());
+            flattenedCoords.add(landmark.getX());
+            flattenedCoords.add(landmark.getY());
+            flattenedCoords.add(landmark.getZ());
           }
-          k++;
+          holisticComponents.put(HOLISTIC_COMPONENTS.get(i), flattenedCoords);
         }
+        landmarksArray.add(holisticComponents);
       }
+      Map<String, Object> event = new HashMap<>();
+      event.put("type", "holistic");
+      event.put("landmarks", landmarksArray);
+      _eventSink.success(event);
     } catch (Exception e) {
       Log.e("Holistic", "Couldn't parse landmarks packet, error: " + e);
       return;
@@ -202,9 +209,11 @@ final class TrackingHolistic implements TrackingType {
   private HolisticTrackingOptions _options;
   private FrameProcessor _processor;
   private Map<String, LandmarksHandler> _landmarksHandlers;
+  private QueuingEventSink _eventSink;
 
-  TrackingHolistic(HolisticTrackingOptions options) {
+  TrackingHolistic(HolisticTrackingOptions options, QueuingEventSink eventSink) {
     _options = options;
+    _eventSink = eventSink;
     _landmarksHandlers = new HashMap<>();
   }
 
@@ -219,6 +228,7 @@ final class TrackingHolistic implements TrackingType {
     _landmarksHandlers.put("multi_holistic_landmarks_array", new HolisticLandmarksHandler());
     _processor.addPacketCallback("multi_holistic_landmarks_array", _landmarksHandlers.get("multi_holistic_landmarks_array"));
     _landmarksHandlers.get("multi_holistic_landmarks_array").enable(_options.enableHolisticLandmarks());
+    _landmarksHandlers.get("multi_holistic_landmarks_array").setEventSink(_eventSink);
 
     if (!_options.enableHolisticLandmarks()) {
       // vector<mediapipe::NormalizedLandmarkList>
@@ -240,6 +250,7 @@ final class TrackingHolistic implements TrackingType {
         _landmarksHandlers.put(landmarkTypes[i], new LandmarksHandler());
         _processor.addPacketCallback(landmarkTypes[i], _landmarksHandlers.get(landmarkTypes[i]));
         _landmarksHandlers.get(landmarkTypes[i]).enable(landmarkEnabled[i]);
+        _landmarksHandlers.get(landmarkTypes[i]).setEventSink(_eventSink);
       }
     }
   }

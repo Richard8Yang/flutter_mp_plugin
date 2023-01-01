@@ -43,7 +43,6 @@ interface SourceType {
 
 final class MpTracking {
   private final TextureRegistry.SurfaceTextureEntry textureEntry;
-  private QueuingEventSink eventSink;
   private final EventChannel eventChannel;
 
   // Flips the camera-preview frames vertically by default, before sending them into FrameProcessor
@@ -88,7 +87,7 @@ final class MpTracking {
     this.textureEntry = textureEntry;
     this.activity = activity;
 
-    Log.d("MpTracker", type, null);
+    QueuingEventSink eventSink = new QueuingEventSink();
 
     if (type.equals("holistic")) {
       HolisticTrackingOptions trackingOptions = new HolisticTrackingOptions();
@@ -118,7 +117,7 @@ final class MpTracking {
           trackingOptions.enableLandmarksOverlay((Boolean)options.get("enableLandmarksOverlay"));
         }
       }
-      this.tracker = new TrackingHolistic(trackingOptions);
+      this.tracker = new TrackingHolistic(trackingOptions, eventSink);
     } else if (type.equals("face")) {
       // TODO:
     } else if (type.equals("body")) {
@@ -152,18 +151,15 @@ final class MpTracking {
     converter.setFlipY(FLIP_FRAMES_VERTICALLY);
     converter.setConsumer(processor);
 
-    this.eventSink = new QueuingEventSink();
     this.eventChannel.setStreamHandler(
       new EventChannel.StreamHandler() {
         @Override
         public void onListen(Object o, EventChannel.EventSink sink) {
           eventSink.setDelegate(sink);
-          //tracker.enableLandmarkCallbacks(true);
         }
         @Override
         public void onCancel(Object o) {
           eventSink.setDelegate(null);
-          //tracker.enableLandmarkCallbacks(false);
         }
       }
     );
