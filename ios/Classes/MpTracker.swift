@@ -2,12 +2,13 @@ import Flutter
 import UIKit
 import AVFoundation
 
-class MpTracker: NSObject, FlutterTexture, AVCaptureVideoDataOutputSampleBufferDelegate, TrackerDelegate {
-    var tracker: HolisticTracker?
-    var eventChannel: FlutterEventChannel?
-    var textureRegistry: FlutterTextureRegistry?
-    var textureId: Int64 = -1
-    var targetBuffer: CVPixelBuffer?
+class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoDataOutputSampleBufferDelegate, TrackerDelegate {
+    private var tracker: HolisticTracker?
+    private var eventChannel: FlutterEventChannel?
+    private var textureRegistry: FlutterTextureRegistry?
+    private var textureId: Int64 = -1
+    private var targetBuffer: CVPixelBuffer?
+    private var eventSink: FlutterEventSink?
 
     init(_ textureRegistry: FlutterTextureRegistry?, messenger: FlutterBinaryMessenger?, options: Dictionary<String, Any>?) {
         super.init()
@@ -48,6 +49,7 @@ class MpTracker: NSObject, FlutterTexture, AVCaptureVideoDataOutputSampleBufferD
         self.textureId = self.textureRegistry!.register(self);
         let eventChannelName: String = "landmarks_" + String(self.textureId)
         self.eventChannel = FlutterEventChannel(name: eventChannelName, binaryMessenger: messenger!)
+        self.eventChannel!.setStreamHandler(self)
     }
 
     public func getTextureId() -> Int64 {
@@ -56,6 +58,16 @@ class MpTracker: NSObject, FlutterTexture, AVCaptureVideoDataOutputSampleBufferD
 
     public func start() {
         self.tracker!.startGraph()
+    }
+
+    // FlutterStreamHandler interfaces
+    public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        self.eventSink = events
+        return nil
+    }
+    public func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        self.eventSink = nil
+        return nil
     }
 
     // FlutterTexture interface. Called by textureRegistry.textureFrameAvailable when a new frame is available
@@ -90,9 +102,12 @@ class MpTracker: NSObject, FlutterTexture, AVCaptureVideoDataOutputSampleBufferD
     // TrackerDelegate interface.
     func holisticTracker(_ holisticTracker: HolisticTracker!, didOutputLandmarks name: String!, packetData packet: [AnyHashable : Any]!) {
         // Landmarks handling
+        if (self.eventSink == nil) {
+            return
+        }
         name.withCString { nameStr in
             if (0 == memcmp(nameStr, kMultiHolisticStream, strlen(kMultiHolisticStream))) {
-                processHolisticLandmarks(packet)
+                processHolisticLandmarks(packet, landmarkType: name)
             } else if (0 == memcmp(nameStr, kMultiFaceStream, strlen(kMultiFaceStream)) ||
                        0 == memcmp(nameStr, kMultiPoseStream, strlen(kMultiPoseStream)) ||
                        0 == memcmp(nameStr, kMultiLeftHandStream, strlen(kMultiLeftHandStream)) ||
@@ -103,34 +118,38 @@ class MpTracker: NSObject, FlutterTexture, AVCaptureVideoDataOutputSampleBufferD
         }
     }
     
-    func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!) {
+    static let holisticComponentNames: [String] = ["face", "pose", "lefthand", "righthand"]
+    func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!, landmarkType: String) {
         // Holistic landmarks, Dict<Dict<Array<Landmark>>>
-        //NSLog("==== Got new holistic packet ====")
-        for (idx, data) in landmarkData {
-            let index = idx as! Int
+        var landmarksArray = Array<Any>()
+        for (_, data) in landmarkData {
             let holisticDict = data as! [AnyHashable : Any]
-            //NSLog("Holistic landmark #%d count %d", index, holisticDict.count)
+            var oneHolistic = [String : Any]()
             for (lmKey, lmVal) in holisticDict {
                 let landmarkType = lmKey as! Int
                 let landmarkList = lmVal as! [Landmark]
-                //NSLog("#%d landmarks count %d", landmarkType, landmarkList.count)
+                var flattenedCoords = Array<Any>()
                 for landmark in landmarkList {
-                    //NSLog("\t\"%d\": %.6f %.6f %.6f", landmarkType, landmark.x, landmark.y, landmark.z)
+                    flattenedCoords += [landmark.x, landmark.y, landmark.z]
                 }
+                oneHolistic[MpTracker.holisticComponentNames[landmarkType]] = flattenedCoords
             }
+            landmarksArray.append(oneHolistic)
         }
+        self.eventSink!(["type": landmarkType, "landmarks": landmarksArray])
     }
     
     func processLandmarksByType(_ landmarkData: [AnyHashable : Any]!, landmarkType: String) {
         // Landmarks of a single component, Dict<Array<Landmark>>
-        //NSLog("==== Got new %s packet ====", landmarkType)
-        for (idx, data) in landmarkData {
-            let index = idx as! Int
+        var landmarksArray = Array<Any>()
+        for (_, data) in landmarkData {
             let landmarkList = data as! [Landmark]
-            //NSLog("#%d landmarks count %d", index, landmarkList.count)
+            var flattenedCoords = Array<Any>()
             for landmark in landmarkList {
-                //NSLog("\t\"%d\": %.6f %.6f %.6f", index, landmark.x, landmark.y, landmark.z)
+                flattenedCoords += [landmark.x, landmark.y, landmark.z]
             }
+            landmarksArray.append(flattenedCoords)
         }
+        self.eventSink!(["type": landmarkType, "landmarks": landmarksArray])
     }
 }
