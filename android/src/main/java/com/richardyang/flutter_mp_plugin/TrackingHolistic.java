@@ -45,13 +45,21 @@ class LandmarksHandler implements PacketCallback {
     if (!_enabled) return;
 
     try {
+      List<Object> landmarksArray = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
       List<NormalizedLandmarkList> arrayLandmarks = PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
       for (NormalizedLandmarkList landmarks : arrayLandmarks) {
+        List<Float> flattenedCoords = new ArrayList<Float>();
         for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
-          //Log.d("Holistic", " \"" + k + "\": " + landmark.getX() + " " + landmark.getY() + " " + landmark.getZ());
+          flattenedCoords.add(landmark.getX());
+          flattenedCoords.add(landmark.getY());
+          flattenedCoords.add(landmark.getZ());
         }
       }
+      Map<String, Object> event = new HashMap<>();
+      event.put("type", _typeName);
+      event.put("landmarks", landmarksArray);
+      _eventSink.success(event);
     } catch (Exception e) {
       Log.e("LM", "Couldn't parse landmarks packet, error: " + e);
       return;
