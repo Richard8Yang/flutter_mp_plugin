@@ -2,7 +2,9 @@ enum LandmarkType {
   holistic,
   face,
   pose,
-  hand,
+  lefthand,
+  righthand,
+  poseworld,
   unknown,
 }
 

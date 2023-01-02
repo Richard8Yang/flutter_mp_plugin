@@ -60,16 +60,21 @@ class LandmarkEventSubscriber {
   }
 
   LandmarkEvent landmarksToEvent(dynamic event) {
-    //final Map<String, dynamic> map = event as Map<String, dynamic>;
-    switch (event['type']) {
-      case 'holistic':
-        return LandmarkEvent(
-          landmarkType: LandmarkType.holistic,
-          landmarkList: event['landmarks'],
-        );
-
-      default:
-        return LandmarkEvent(landmarkType: LandmarkType.unknown);
+    final typeMap = {
+      'multi_holistic_landmarks_array': LandmarkType.holistic,
+      'multi_face_landmarks': LandmarkType.face,
+      'multi_pose_landmarks': LandmarkType.pose,
+      'multi_left_hand_landmarks': LandmarkType.lefthand,
+      'multi_right_hand_landmarks': LandmarkType.righthand,
+      'multi_pose_world_landmarks': LandmarkType.poseworld,
+    };
+    if (typeMap.containsKey(event['type'])) {
+      return LandmarkEvent(
+        landmarkType: typeMap[event['type']]!,
+        landmarkList: event['landmarks'],
+      );
+    } else {
+      return LandmarkEvent(landmarkType: LandmarkType.unknown);
     }
   }
 }

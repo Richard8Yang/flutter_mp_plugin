@@ -27,9 +27,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+// vector<mediapipe::NormalizedLandmarkList>
 class LandmarksHandler implements PacketCallback {
   protected boolean _enabled = true;
+  protected String _typeName = "";
   protected QueuingEventSink _eventSink = null;
+
+  LandmarksHandler(String typeName) {
+    _typeName = typeName;
+  }
 
   public void enable(boolean enabled) { _enabled = enabled; }
   public void setEventSink(QueuingEventSink eventSink) { _eventSink = eventSink; }
@@ -53,19 +59,34 @@ class LandmarksHandler implements PacketCallback {
   }
 }
 
+// vector<mediapipe::LandmarkList>
 final class WorldLandmarksHandler extends LandmarksHandler {
+
+  WorldLandmarksHandler(String typeName) {
+    super(typeName);
+  }
+
   @Override
   public void process(Packet packet) {
     if (!_enabled) return;
 
     try {
+      List<Object> landmarksArray = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
       List<LandmarkList> arrayLandmarks = PacketGetter.getProtoVector(packet, LandmarkList.parser());
       for (LandmarkList landmarks : arrayLandmarks) {
+        List<Float> flattenedCoords = new ArrayList<Float>();
         for (Landmark landmark : landmarks.getLandmarkList()) {
-          //Log.d("Holistic", " \"" + k + "\": " + landmark.getX() + " " + landmark.getY() + " " + landmark.getZ());
+          flattenedCoords.add(landmark.getX());
+          flattenedCoords.add(landmark.getY());
+          flattenedCoords.add(landmark.getZ());
         }
+        landmarksArray.add(flattenedCoords);
       }
+      Map<String, Object> event = new HashMap<>();
+      event.put("type", _typeName);
+      event.put("landmarks", landmarksArray);
+      _eventSink.success(event);
     } catch (Exception e) {
       Log.e("WorldLM", "Couldn't parse landmarks packet, error: " + e);
       return;
@@ -75,8 +96,13 @@ final class WorldLandmarksHandler extends LandmarksHandler {
 
 // For each output landmark stream we must assign corresponding callback
 // Refer to the link for available streams: https://github.com/google/mediapipe/blob/master/mediapipe/graphs/holistic_tracking/holistic_tracking_gpu.pbtxt
+// vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
 final class HolisticLandmarksHandler extends LandmarksHandler {
   static List<String> HOLISTIC_COMPONENTS = Arrays.asList("face", "pose", "lefthand", "righthand");
+
+  HolisticLandmarksHandler(String typeName) {
+    super(typeName);
+  }
 
   @Override
   public void process(Packet packet) {
@@ -101,7 +127,7 @@ final class HolisticLandmarksHandler extends LandmarksHandler {
         landmarksArray.add(holisticComponents);
       }
       Map<String, Object> event = new HashMap<>();
-      event.put("type", "holistic");
+      event.put("type", _typeName);
       event.put("landmarks", landmarksArray);
       _eventSink.success(event);
     } catch (Exception e) {
@@ -224,34 +250,33 @@ final class TrackingHolistic implements TrackingType {
   public void attachProcessor(FrameProcessor processor) {
     _processor = processor;
 
-    // vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
-    _landmarksHandlers.put("multi_holistic_landmarks_array", new HolisticLandmarksHandler());
-    _processor.addPacketCallback("multi_holistic_landmarks_array", _landmarksHandlers.get("multi_holistic_landmarks_array"));
-    _landmarksHandlers.get("multi_holistic_landmarks_array").enable(_options.enableHolisticLandmarks());
-    _landmarksHandlers.get("multi_holistic_landmarks_array").setEventSink(_eventSink);
-
-    if (!_options.enableHolisticLandmarks()) {
-      // vector<mediapipe::NormalizedLandmarkList>
-      final String landmarkTypes[] = {
-        "multi_face_landmarks",
-        "multi_pose_landmarks",
-        "multi_left_hand_landmarks",
-        "multi_right_hand_landmarks",
-        //"multi_pose_world_landmarks"
-      };
-      final boolean landmarkEnabled[] = {
-        _options.enableFaceLandmarks(),
-        _options.enablePoseLandmarks(),
-        _options.enableLeftHandLandmarks(),
-        _options.enableRightHandLandmarks(),
-        //_options.enablePoseWorldLandmarks()
-      };
-      for (int i = 0; i < landmarkTypes.length; ++i) {
-        _landmarksHandlers.put(landmarkTypes[i], new LandmarksHandler());
-        _processor.addPacketCallback(landmarkTypes[i], _landmarksHandlers.get(landmarkTypes[i]));
-        _landmarksHandlers.get(landmarkTypes[i]).enable(landmarkEnabled[i]);
-        _landmarksHandlers.get(landmarkTypes[i]).setEventSink(_eventSink);
+    final String landmarkTypes[] = {
+      "multi_holistic_landmarks_array",
+      "multi_face_landmarks",
+      "multi_pose_landmarks",
+      "multi_left_hand_landmarks",
+      "multi_right_hand_landmarks",
+      "multi_pose_world_landmarks",
+    };
+    final boolean landmarkEnabled[] = {
+      _options.enableHolisticLandmarks(),
+      _options.enableFaceLandmarks() && !_options.enableHolisticLandmarks(),
+      _options.enablePoseLandmarks() && !_options.enableHolisticLandmarks(),
+      _options.enableLeftHandLandmarks() && !_options.enableHolisticLandmarks(),
+      _options.enableRightHandLandmarks() && !_options.enableHolisticLandmarks(),
+      _options.enablePoseWorldLandmarks(),
+    };
+    for (int i = 0; i < landmarkTypes.length; ++i) {
+      if (landmarkTypes[i].equals("multi_holistic_landmarks_array")) {
+        _landmarksHandlers.put(landmarkTypes[i], new HolisticLandmarksHandler(landmarkTypes[i]));
+      } else if (landmarkTypes[i].equals("multi_pose_world_landmarks")) {
+        _landmarksHandlers.put(landmarkTypes[i], new WorldLandmarksHandler(landmarkTypes[i]));
+      } else {
+        _landmarksHandlers.put(landmarkTypes[i], new LandmarksHandler(landmarkTypes[i]));
       }
+      _processor.addPacketCallback(landmarkTypes[i], _landmarksHandlers.get(landmarkTypes[i]));
+      _landmarksHandlers.get(landmarkTypes[i]).enable(landmarkEnabled[i]);
+      _landmarksHandlers.get(landmarkTypes[i]).setEventSink(_eventSink);
     }
   }
 

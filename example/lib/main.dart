@@ -68,6 +68,7 @@ class _MyAppState extends State<MyApp> {
   void handleLandmarkEvent(LandmarkEvent event) {
     switch (event.landmarkType) {
       case LandmarkType.holistic:
+        // List<Map<String, List>>
         print("==== Got new holistic packet ====");
         int index = 0;
         for (final element in event.landmarkList!) {
