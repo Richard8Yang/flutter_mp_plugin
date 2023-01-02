@@ -55,6 +55,7 @@ class LandmarksHandler implements PacketCallback {
           flattenedCoords.add(landmark.getY());
           flattenedCoords.add(landmark.getZ());
         }
+        landmarksArray.add(flattenedCoords);
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);

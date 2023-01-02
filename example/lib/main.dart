@@ -36,7 +36,7 @@ class _MyAppState extends State<MyApp> {
     try {
       _textureId =
           await _flutterMpPlugin.init(trackingType: "holistic", options: {
-        "enableHolisticLandmarks": true,
+        "enableHolisticLandmarks": false, // if holistic is enabled, any separate face/pose/hand stream will be disabled
         "refineFaceLandmarks": true,
         "enableFaceLandmarks": true,
         "enablePoseLandmarks": false,
@@ -85,6 +85,25 @@ class _MyAppState extends State<MyApp> {
             }
           });
           index++;
+        }
+        break;
+
+      case LandmarkType.face:
+      case LandmarkType.pose:
+      case LandmarkType.lefthand:
+      case LandmarkType.righthand:
+      case LandmarkType.poseworld:
+        // List<List>
+        print("==== Got new ${event.landmarkType} packet ====");
+        for (final element in event.landmarkList!) {
+          final int count = element.length ~/ 3;
+          print("${event.landmarkType} landmarks count $count");
+          for (int i = 0; i < element.length; i += 3) {
+              final x = element[i + 0];
+              final y = element[i + 1];
+              final z = element[i + 2];
+              print(" \"${event.landmarkType}\": $x $y $z");
+            }
         }
         break;
 
