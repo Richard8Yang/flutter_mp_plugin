@@ -3,22 +3,6 @@
   <uses-permission android:name="android.permission.CAMERA" />
   <uses-feature android:name="android.hardware.camera" />
   <uses-feature android:name="android.hardware.camera.autofocus" />
-
-  <meta-data
-      android:name="cameraFacingFront"
-      android:value="false" />
-  <meta-data
-      android:name="binaryGraphName"
-      android:value="multi_holistic_tracking_gpu.binarypb" />
-  <meta-data
-      android:name="inputVideoStreamName"
-      android:value="input_video" />
-  <meta-data
-      android:name="outputVideoStreamName"
-      android:value="output_video" />
-  <meta-data
-      android:name="flipFramesVertically"
-      android:value="true" />
   <meta-data
       android:name="converterNumBuffers"
       android:value="3" />
