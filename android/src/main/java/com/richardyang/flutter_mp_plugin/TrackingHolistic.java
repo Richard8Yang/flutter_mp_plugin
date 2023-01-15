@@ -1,3 +1,9 @@
+
+// For each output landmark stream we must assign corresponding callback
+// Refer to the link for available streams of holistic tracking:
+// https://github.com/google/mediapipe/blob/master/mediapipe/graphs/holistic_tracking/holistic_tracking_gpu.pbtxt
+// vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
+
 package com.richardyang.flutter_mp_plugin;
 
 import android.graphics.SurfaceTexture;
@@ -47,9 +53,10 @@ class LandmarksHandler implements PacketCallback {
     try {
       List<Object> landmarksArray = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
-      List<NormalizedLandmarkList> arrayLandmarks = PacketGetter.getProtoVector(packet, NormalizedLandmarkList.parser());
-      for (NormalizedLandmarkList landmarks : arrayLandmarks) {
+      byte[][] arrayLandmarks = PacketGetter.getRawBytesVector(packet);
+      for (byte[] landmarkBytes : arrayLandmarks) {
         List<Float> flattenedCoords = new ArrayList<Float>();
+        NormalizedLandmarkList landmarks = NormalizedLandmarkList.parseFrom(landmarkBytes);
         for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
           flattenedCoords.add(landmark.getX());
           flattenedCoords.add(landmark.getY());
@@ -82,9 +89,10 @@ final class WorldLandmarksHandler extends LandmarksHandler {
     try {
       List<Object> landmarksArray = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
-      List<LandmarkList> arrayLandmarks = PacketGetter.getProtoVector(packet, LandmarkList.parser());
-      for (LandmarkList landmarks : arrayLandmarks) {
+      byte[][] arrayLandmarks = PacketGetter.getRawBytesVector(packet);
+      for (byte[] landmarkBytes : arrayLandmarks) {
         List<Float> flattenedCoords = new ArrayList<Float>();
+        LandmarkList landmarks = LandmarkList.parseFrom(landmarkBytes);
         for (Landmark landmark : landmarks.getLandmarkList()) {
           flattenedCoords.add(landmark.getX());
           flattenedCoords.add(landmark.getY());
@@ -103,9 +111,7 @@ final class WorldLandmarksHandler extends LandmarksHandler {
   }
 }
 
-// For each output landmark stream we must assign corresponding callback
-// Refer to the link for available streams: https://github.com/google/mediapipe/blob/master/mediapipe/graphs/holistic_tracking/holistic_tracking_gpu.pbtxt
-// vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
+
 final class HolisticLandmarksHandler extends LandmarksHandler {
   static List<String> HOLISTIC_COMPONENTS = Arrays.asList("face", "pose", "lefthand", "righthand");
 
@@ -120,18 +126,20 @@ final class HolisticLandmarksHandler extends LandmarksHandler {
     try {
       List<Object> landmarksArray = new ArrayList<>();
       // vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
-      List<List<NormalizedLandmarkList>> multiInstLandmarks = PacketGetter.getProtoVectorVector(packet, NormalizedLandmarkList.parser());
-      for (List<NormalizedLandmarkList> oneInstLandmarks : multiInstLandmarks) {
+      byte[][][] landmarksRaw = PacketGetter.getRawBytesVectorVector(packet);
+      for (byte[][] arrayLandmarks : landmarksRaw) {
         Map<String, Object> holisticComponents = new HashMap<>();
-        for (int i = 0; i < oneInstLandmarks.size(); i++) {
+        int i = 0;
+        for (byte[] landmarkBytes : arrayLandmarks) {
           List<Float> flattenedCoords = new ArrayList<Float>();
-          NormalizedLandmarkList landmarks = oneInstLandmarks.get(i);
+          NormalizedLandmarkList landmarks = NormalizedLandmarkList.parseFrom(landmarkBytes);
           for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
             flattenedCoords.add(landmark.getX());
             flattenedCoords.add(landmark.getY());
             flattenedCoords.add(landmark.getZ());
           }
           holisticComponents.put(HOLISTIC_COMPONENTS.get(i), flattenedCoords);
+          i += 1;
         }
         landmarksArray.add(holisticComponents);
       }
