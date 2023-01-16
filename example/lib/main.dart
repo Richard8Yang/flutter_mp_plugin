@@ -42,6 +42,7 @@ class _MyAppState extends State<MyApp> {
         "enablePoseLandmarks": false,
         "enableLeftHandLandmarks": false,
         "enableRightHandLandmarks": false,
+        "enablePoseWorldLandmarks": false,
         "enableLandmarksOverlay": true,
       });
       print("Initialized tracker $_textureId");

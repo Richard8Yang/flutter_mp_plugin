@@ -113,6 +113,9 @@ final class MpTracking {
         if (options.containsKey("enableRightHandLandmarks")) {
           trackingOptions.enableRightHandLandmarks((Boolean)options.get("enableRightHandLandmarks"));
         }
+        if (options.containsKey("enablePoseWorldLandmarks")) {
+          trackingOptions.enablePoseWorldLandmarks((Boolean)options.get("enablePoseWorldLandmarks"));
+        }
         if (options.containsKey("enableLandmarksOverlay")) {
           trackingOptions.enableLandmarksOverlay((Boolean)options.get("enableLandmarksOverlay"));
         }
