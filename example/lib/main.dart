@@ -36,20 +36,21 @@ class _MyAppState extends State<MyApp> {
     try {
       _textureId =
           await _flutterMpPlugin.init(trackingType: "holistic", options: {
-        "enableHolisticLandmarks": false, // if holistic is enabled, any separate face/pose/hand stream will be disabled
+        "enableHolisticLandmarks":
+            false, // if holistic is enabled, any separate face/pose/hand stream will be disabled
         "refineFaceLandmarks": true,
-        "enableFaceLandmarks": true,
-        "enablePoseLandmarks": false,
+        "enableFaceLandmarks": false,
+        "enablePoseLandmarks": true,
         "enableLeftHandLandmarks": false,
         "enableRightHandLandmarks": false,
-        "enablePoseWorldLandmarks": false,
+        "enablePoseWorldLandmarks": true,
         "enableLandmarksOverlay": true,
       });
       print("Initialized tracker $_textureId");
       if (_textureId >= 0) {
         Future.delayed(const Duration(milliseconds: 100), () async {
           bool succ = await _flutterMpPlugin.start(
-            sourceInfo: "camera::front/medium_resolution",
+            sourceInfo: "camera::back/medium_resolution",
           );
           if (succ) {
             _landmarksSubscriber.subscribe(
@@ -70,7 +71,7 @@ class _MyAppState extends State<MyApp> {
     switch (event.landmarkType) {
       case LandmarkType.holistic:
         // List<Map<String, List>>
-        print("==== Got new holistic packet ====");
+        print("==== Got new holistic packet @${event.timestamp} ====");
         int index = 0;
         for (final element in event.landmarkList!) {
           //final oneHolistic = element as Map<String, List>;
@@ -95,16 +96,16 @@ class _MyAppState extends State<MyApp> {
       case LandmarkType.righthand:
       case LandmarkType.poseworld:
         // List<List>
-        print("==== Got new ${event.landmarkType} packet ====");
+        print("==== Got new ${event.landmarkType} packet @${event.timestamp} ====");
         for (final element in event.landmarkList!) {
           final int count = element.length ~/ 3;
           print("${event.landmarkType} landmarks count $count");
           for (int i = 0; i < element.length; i += 3) {
-              final x = element[i + 0];
-              final y = element[i + 1];
-              final z = element[i + 2];
-              print(" \"${event.landmarkType}\": $x $y $z");
-            }
+            final x = element[i + 0];
+            final y = element[i + 1];
+            final z = element[i + 2];
+            print(" \"${event.landmarkType}\": $x $y $z");
+          }
         }
         break;
 
