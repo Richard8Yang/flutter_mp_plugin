@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 enum LandmarkType {
   holistic,
   face,
@@ -12,8 +14,10 @@ class LandmarkEvent {
   LandmarkEvent({
     required this.landmarkType,
     this.landmarkList,
+    this.timestamp,
   });
 
   final LandmarkType landmarkType;
   final List? landmarkList;
+  final int? timestamp;
 }

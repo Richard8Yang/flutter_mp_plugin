@@ -66,6 +66,7 @@ class LandmarksHandler implements PacketCallback {
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
+      event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
       _eventSink.success(event);
     } catch (Exception e) {
@@ -102,6 +103,7 @@ final class WorldLandmarksHandler extends LandmarksHandler {
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
+      event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
       _eventSink.success(event);
     } catch (Exception e) {
@@ -145,6 +147,7 @@ final class HolisticLandmarksHandler extends LandmarksHandler {
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
+      event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
       _eventSink.success(event);
     } catch (Exception e) {

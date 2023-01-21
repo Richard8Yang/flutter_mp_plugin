@@ -72,6 +72,7 @@ class LandmarkEventSubscriber {
       return LandmarkEvent(
         landmarkType: typeMap[event['type']]!,
         landmarkList: event['landmarks'],
+        timestamp: event['timestamp'],
       );
     } else {
       return LandmarkEvent(landmarkType: LandmarkType.unknown);

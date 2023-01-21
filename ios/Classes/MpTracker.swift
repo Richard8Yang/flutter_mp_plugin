@@ -100,26 +100,26 @@ class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoD
     }
     
     // TrackerDelegate interface.
-    func holisticTracker(_ holisticTracker: HolisticTracker!, didOutputLandmarks name: String!, packetData packet: [AnyHashable : Any]!) {
+    func holisticTracker(_ holisticTracker: HolisticTracker!, didOutputLandmarks name: String!, packetData packet: [AnyHashable : Any]!, timeStamp ts: Int64) {
         // Landmarks handling
         if (self.eventSink == nil) {
             return
         }
         name.withCString { nameStr in
             if (0 == memcmp(nameStr, kMultiHolisticStream, strlen(kMultiHolisticStream))) {
-                processHolisticLandmarks(packet, landmarkType: name)
+                processHolisticLandmarks(packet, landmarkType: name, timeStamp: ts)
             } else if (0 == memcmp(nameStr, kMultiFaceStream, strlen(kMultiFaceStream)) ||
                        0 == memcmp(nameStr, kMultiPoseStream, strlen(kMultiPoseStream)) ||
                        0 == memcmp(nameStr, kMultiLeftHandStream, strlen(kMultiLeftHandStream)) ||
                        0 == memcmp(nameStr, kMultiRightHandStream, strlen(kMultiRightHandStream)) ||
                        0 == memcmp(nameStr, kMultiPoseWorldStream, strlen(kMultiPoseWorldStream))) {
-                processLandmarksByType(packet, landmarkType: name)
+                processLandmarksByType(packet, landmarkType: name, timeStamp: ts)
             }
         }
     }
     
     static let holisticComponentNames: [String] = ["face", "pose", "lefthand", "righthand"]
-    func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!, landmarkType: String) {
+    func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!, landmarkType: String, timeStamp: Int64) {
         // Holistic landmarks, Dict<Dict<Array<Landmark>>>
         var landmarksArray = Array<Any>()
         for (_, data) in landmarkData {
@@ -136,10 +136,10 @@ class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoD
             }
             landmarksArray.append(oneHolistic)
         }
-        self.eventSink!(["type": landmarkType, "landmarks": landmarksArray])
+        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray])
     }
     
-    func processLandmarksByType(_ landmarkData: [AnyHashable : Any]!, landmarkType: String) {
+    func processLandmarksByType(_ landmarkData: [AnyHashable : Any]!, landmarkType: String, timeStamp: Int64) {
         // Landmarks of a single component, Dict<Array<Landmark>>
         var landmarksArray = Array<Any>()
         for (_, data) in landmarkData {
@@ -150,6 +150,6 @@ class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoD
             }
             landmarksArray.append(flattenedCoords)
         }
-        self.eventSink!(["type": landmarkType, "landmarks": landmarksArray])
+        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray])
     }
 }

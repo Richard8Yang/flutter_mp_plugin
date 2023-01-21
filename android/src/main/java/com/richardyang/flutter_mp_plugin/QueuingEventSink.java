@@ -5,6 +5,22 @@ import java.util.ArrayList;
 import android.os.Handler;
 import android.os.Looper;
 
+final class EventRunnable implements Runnable {
+  private Object cachedEvent;
+  private EventChannel.EventSink cachedDelegate;
+
+  EventRunnable(EventChannel.EventSink delegate, Object event) {
+    super();
+    cachedDelegate = delegate;
+    cachedEvent = event;
+  }
+
+  @Override
+  public void run() {
+    cachedDelegate.success(cachedEvent);
+  }
+}
+
 /**
  * An implementation of {@link EventChannel.EventSink} which can wrap an underlying sink.
  *
@@ -19,6 +35,23 @@ final class QueuingEventSink implements EventChannel.EventSink {
   private ArrayList<Object> eventQueue = new ArrayList<>();
   private boolean done = false;
   private Handler uiThreadHandler = new Handler(Looper.getMainLooper());
+
+  private Runnable queueRunnable = new Runnable() {
+    @Override
+    public void run() {
+      for (Object event : eventQueue) {
+        if (event instanceof EndOfStreamEvent) {
+          delegate.endOfStream();
+        } else if (event instanceof ErrorEvent) {
+          ErrorEvent errorEvent = (ErrorEvent) event;
+          delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
+        } else {
+          delegate.success(event);
+        }
+      }
+      eventQueue.clear();
+    }
+  };
 
   public void setDelegate(EventChannel.EventSink delegate) {
     this.delegate = delegate;
@@ -40,8 +73,9 @@ final class QueuingEventSink implements EventChannel.EventSink {
 
   @Override
   public void success(Object event) {
-    enqueue(event);
-    maybeFlush();
+    //enqueue(event);
+    //maybeFlush();
+    uiThreadHandler.post(new EventRunnable(delegate, event));
   }
 
   private void enqueue(Object event) {
@@ -55,22 +89,7 @@ final class QueuingEventSink implements EventChannel.EventSink {
     if (delegate == null) {
       return;
     }
-    uiThreadHandler.post(new Runnable() {
-      @Override
-      public void run() {
-        for (Object event : eventQueue) {
-          if (event instanceof EndOfStreamEvent) {
-            delegate.endOfStream();
-          } else if (event instanceof ErrorEvent) {
-            ErrorEvent errorEvent = (ErrorEvent) event;
-            delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
-          } else {
-            delegate.success(event);
-          }
-        }
-        eventQueue.clear();
-      }
-    });
+    uiThreadHandler.post(queueRunnable);
   }
 
   private static class EndOfStreamEvent {}
