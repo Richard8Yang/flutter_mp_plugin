@@ -71,7 +71,8 @@ class LandmarkEventSubscriber {
     if (typeMap.containsKey(event['type'])) {
       return LandmarkEvent(
         landmarkType: typeMap[event['type']]!,
-        landmarkList: event['landmarks'],
+        landmarksList: event['landmarks'],
+        landmarksVisibility: event['visibility'],
         timestamp: event['timestamp'],
       );
     } else {

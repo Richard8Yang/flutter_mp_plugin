@@ -73,17 +73,19 @@ class _MyAppState extends State<MyApp> {
         // List<Map<String, List>>
         print("==== Got new holistic packet @${event.timestamp} ====");
         int index = 0;
-        for (final element in event.landmarkList!) {
+        for (final element in event.landmarksList!) {
           //final oneHolistic = element as Map<String, List>;
           print("Holistic landmark #$index count ${element.length}");
           element.forEach((type, list) {
             final int count = list.length ~/ 3;
             print("$type landmarks count $count");
+            final visibilityList = event.landmarksVisibility![index][type];
             for (int i = 0; i < list.length; i += 3) {
               final x = list[i + 0];
               final y = list[i + 1];
               final z = list[i + 2];
-              print(" \"$type\": $x $y $z");
+              final visibility = visibilityList[i ~/ 3];
+              print(" \"$type\": $x $y $z visibility: $visibility");
             }
           });
           index++;
@@ -96,15 +98,18 @@ class _MyAppState extends State<MyApp> {
       case LandmarkType.righthand:
       case LandmarkType.poseworld:
         // List<List>
-        print("==== Got new ${event.landmarkType} packet @${event.timestamp} ====");
-        for (final element in event.landmarkList!) {
+        print(
+            "==== Got new ${event.landmarkType} packet @${event.timestamp} ====");
+        for (final element in event.landmarksList!) {
           final int count = element.length ~/ 3;
           print("${event.landmarkType} landmarks count $count");
+          final visibilityList = event.landmarksVisibility![0];
           for (int i = 0; i < element.length; i += 3) {
             final x = element[i + 0];
             final y = element[i + 1];
             final z = element[i + 2];
-            print(" \"${event.landmarkType}\": $x $y $z");
+            final visibility = visibilityList[i ~/ 3];
+            print(" \"${event.landmarkType}\": $x $y $z visibility: $visibility");
           }
         }
         break;

@@ -122,34 +122,44 @@ class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoD
     func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!, landmarkType: String, timeStamp: Int64) {
         // Holistic landmarks, Dict<Dict<Array<Landmark>>>
         var landmarksArray = Array<Any>()
+        var landmarksVisiblity = Array<Any>()
         for (_, data) in landmarkData {
             let holisticDict = data as! [AnyHashable : Any]
             var oneHolistic = [String : Any]()
+            var oneVisibility = [String : Any]()
             for (lmKey, lmVal) in holisticDict {
                 let landmarkType = lmKey as! Int
                 let landmarkList = lmVal as! [Landmark]
                 var flattenedCoords = Array<Any>()
+                var visibility = Array<Any>()
                 for landmark in landmarkList {
                     flattenedCoords += [landmark.x, landmark.y, landmark.z]
+                    visibility += [landmark.visibility]
                 }
                 oneHolistic[MpTracker.holisticComponentNames[landmarkType]] = flattenedCoords
+                oneVisibility[MpTracker.holisticComponentNames[landmarkType]] = visibility
             }
             landmarksArray.append(oneHolistic)
+            landmarksVisiblity.append(oneVisibility)
         }
-        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray])
+        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray, "visibility": landmarksVisiblity])
     }
     
     func processLandmarksByType(_ landmarkData: [AnyHashable : Any]!, landmarkType: String, timeStamp: Int64) {
         // Landmarks of a single component, Dict<Array<Landmark>>
         var landmarksArray = Array<Any>()
+        var landmarksVisiblity = Array<Any>()
         for (_, data) in landmarkData {
             let landmarkList = data as! [Landmark]
             var flattenedCoords = Array<Any>()
+            var visibility = Array<Any>()
             for landmark in landmarkList {
                 flattenedCoords += [landmark.x, landmark.y, landmark.z]
+                visibility += [landmark.visibility]
             }
             landmarksArray.append(flattenedCoords)
+            landmarksVisiblity.append(visibility)
         }
-        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray])
+        self.eventSink!(["type": landmarkType, "timestamp": timeStamp, "landmarks": landmarksArray, "visibility": landmarksVisiblity])
     }
 }

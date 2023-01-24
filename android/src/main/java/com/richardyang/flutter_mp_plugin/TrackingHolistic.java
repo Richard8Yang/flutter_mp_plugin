@@ -52,22 +52,27 @@ class LandmarksHandler implements PacketCallback {
 
     try {
       List<Object> landmarksArray = new ArrayList<>();
+      List<Object> landmarksVisibility = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
       byte[][] arrayLandmarks = PacketGetter.getRawBytesVector(packet);
       for (byte[] landmarkBytes : arrayLandmarks) {
         List<Float> flattenedCoords = new ArrayList<Float>();
+        List<Float> visibility = new ArrayList<Float>();
         NormalizedLandmarkList landmarks = NormalizedLandmarkList.parseFrom(landmarkBytes);
         for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
           flattenedCoords.add(landmark.getX());
           flattenedCoords.add(landmark.getY());
           flattenedCoords.add(landmark.getZ());
+          visibility.add(landmark.getVisibility());
         }
         landmarksArray.add(flattenedCoords);
+        landmarksVisibility.add(visibility);
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
       event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
+      event.put("visibility", landmarksVisibility);
       _eventSink.success(event);
     } catch (Exception e) {
       Log.e("LM", "Couldn't parse landmarks packet, error: " + e);
@@ -89,22 +94,27 @@ final class WorldLandmarksHandler extends LandmarksHandler {
 
     try {
       List<Object> landmarksArray = new ArrayList<>();
+      List<Object> landmarksVisibility = new ArrayList<>();
       // vector<mediapipe::NormalizedLandmarkList>
       byte[][] arrayLandmarks = PacketGetter.getRawBytesVector(packet);
       for (byte[] landmarkBytes : arrayLandmarks) {
         List<Float> flattenedCoords = new ArrayList<Float>();
+        List<Float> visibility = new ArrayList<Float>();
         LandmarkList landmarks = LandmarkList.parseFrom(landmarkBytes);
         for (Landmark landmark : landmarks.getLandmarkList()) {
           flattenedCoords.add(landmark.getX());
           flattenedCoords.add(landmark.getY());
           flattenedCoords.add(landmark.getZ());
+          visibility.add(landmark.getVisibility());
         }
         landmarksArray.add(flattenedCoords);
+        landmarksVisibility.add(visibility);
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
       event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
+      event.put("visibility", landmarksVisibility);
       _eventSink.success(event);
     } catch (Exception e) {
       Log.e("WorldLM", "Couldn't parse landmarks packet, error: " + e);
@@ -127,28 +137,35 @@ final class HolisticLandmarksHandler extends LandmarksHandler {
 
     try {
       List<Object> landmarksArray = new ArrayList<>();
+      List<Object> landmarksVisibility = new ArrayList<>();
       // vector<vector<mediapipe::NormalizedLandmarkList>> in the order of < face->pose->lefthand->righthand > landmarks
       byte[][][] landmarksRaw = PacketGetter.getRawBytesVectorVector(packet);
       for (byte[][] arrayLandmarks : landmarksRaw) {
         Map<String, Object> holisticComponents = new HashMap<>();
+        Map<String, Object> holisticVisibility = new HashMap<>();
         int i = 0;
         for (byte[] landmarkBytes : arrayLandmarks) {
           List<Float> flattenedCoords = new ArrayList<Float>();
+          List<Float> visibility = new ArrayList<Float>();
           NormalizedLandmarkList landmarks = NormalizedLandmarkList.parseFrom(landmarkBytes);
           for (NormalizedLandmark landmark : landmarks.getLandmarkList()) {
             flattenedCoords.add(landmark.getX());
             flattenedCoords.add(landmark.getY());
             flattenedCoords.add(landmark.getZ());
+            visibility.add(landmark.getVisibility());
           }
           holisticComponents.put(HOLISTIC_COMPONENTS.get(i), flattenedCoords);
+          holisticVisibility.put(HOLISTIC_COMPONENTS.get(i), visibility);
           i += 1;
         }
         landmarksArray.add(holisticComponents);
+        landmarksVisibility.add(holisticVisibility);
       }
       Map<String, Object> event = new HashMap<>();
       event.put("type", _typeName);
       event.put("timestamp", PacketGetter.getTimestamp(packet));
       event.put("landmarks", landmarksArray);
+      event.put("visibility", landmarksVisibility);
       _eventSink.success(event);
     } catch (Exception e) {
       Log.e("Holistic", "Couldn't parse landmarks packet, error: " + e);
