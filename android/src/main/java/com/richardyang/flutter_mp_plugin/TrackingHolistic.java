@@ -125,7 +125,7 @@ final class WorldLandmarksHandler extends LandmarksHandler {
 
 
 final class HolisticLandmarksHandler extends LandmarksHandler {
-  static List<String> HOLISTIC_COMPONENTS = Arrays.asList("face", "pose", "lefthand", "righthand");
+  static List<String> HOLISTIC_COMPONENTS = Arrays.asList("face", "pose", "lefthand", "righthand", "poseworld");
 
   HolisticLandmarksHandler(String typeName) {
     super(typeName);

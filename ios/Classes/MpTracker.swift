@@ -118,7 +118,7 @@ class MpTracker: NSObject, FlutterStreamHandler, FlutterTexture, AVCaptureVideoD
         }
     }
     
-    static let holisticComponentNames: [String] = ["face", "pose", "lefthand", "righthand"]
+    static let holisticComponentNames: [String] = ["face", "pose", "lefthand", "righthand", "poseworld"]
     func processHolisticLandmarks(_ landmarkData: [AnyHashable : Any]!, landmarkType: String, timeStamp: Int64) {
         // Holistic landmarks, Dict<Dict<Array<Landmark>>>
         var landmarksArray = Array<Any>()

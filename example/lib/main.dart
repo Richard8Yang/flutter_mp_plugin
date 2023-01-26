@@ -36,8 +36,8 @@ class _MyAppState extends State<MyApp> {
     try {
       _textureId =
           await _flutterMpPlugin.init(trackingType: "holistic", options: {
-        "enableHolisticLandmarks":
-            false, // if holistic is enabled, any separate face/pose/hand stream will be disabled
+        // if holistic is enabled, any separate face/pose/hand stream will be disabled
+        "enableHolisticLandmarks": true,
         "refineFaceLandmarks": true,
         "enableFaceLandmarks": false,
         "enablePoseLandmarks": true,
@@ -109,7 +109,8 @@ class _MyAppState extends State<MyApp> {
             final y = element[i + 1];
             final z = element[i + 2];
             final visibility = visibilityList[i ~/ 3];
-            print(" \"${event.landmarkType}\": $x $y $z visibility: $visibility");
+            print(
+                " \"${event.landmarkType}\": $x $y $z visibility: $visibility");
           }
         }
         break;
