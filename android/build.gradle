@@ -3,8 +3,12 @@ version '1.0'
 
 buildscript {
     repositories {
-        google()
-        mavenCentral()
+        // google()
+        // mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/google' }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/jcenter'}
     }
 
     dependencies {
@@ -14,8 +18,12 @@ buildscript {
 
 rootProject.allprojects {
     repositories {
-        google()
-        mavenCentral()
+        // google()
+        // mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/google' }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
+        maven { url 'https://maven.aliyun.com/nexus/content/repositories/jcenter'}
 
         // Needed for flutter plugin with aar
         flatDir {

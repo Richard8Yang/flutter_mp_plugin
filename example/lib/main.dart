@@ -1,5 +1,6 @@
 import 'dart:ffi';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -7,6 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_mp_plugin/flutter_mp_plugin.dart';
 import 'package:flutter_mp_plugin/landmark_event.dart';
 
+
+void dbgPrint(Object? obj) {
+  if (kDebugMode) {
+    //final ts = DateTime.now().toString();
+    print(obj);
+  }
+}
 void main() {
   runApp(const MyApp());
 }
@@ -39,14 +47,14 @@ class _MyAppState extends State<MyApp> {
         // if holistic is enabled, any separate face/pose/hand stream will be disabled
         "enableHolisticLandmarks": true,
         "refineFaceLandmarks": true,
-        "enableFaceLandmarks": false,
+        "enableFaceLandmarks": true,
         "enablePoseLandmarks": true,
         "enableLeftHandLandmarks": false,
         "enableRightHandLandmarks": false,
         "enablePoseWorldLandmarks": true,
         "enableLandmarksOverlay": true,
       });
-      print("Initialized tracker $_textureId");
+      dbgPrint("Initialized tracker $_textureId");
       if (_textureId >= 0) {
         Future.delayed(const Duration(milliseconds: 100), () async {
           bool succ = await _flutterMpPlugin.start(
@@ -58,12 +66,12 @@ class _MyAppState extends State<MyApp> {
               onEvent: handleLandmarkEvent,
             );
           } else {
-            print("Failed to start the tracker!");
+            dbgPrint("Failed to start the tracker!");
           }
         });
       }
     } catch (e) {
-      print(e);
+      dbgPrint(e);
     }
   }
 
@@ -71,21 +79,21 @@ class _MyAppState extends State<MyApp> {
     switch (event.landmarkType) {
       case LandmarkType.holistic:
         // List<Map<String, List>>
-        print("==== Got new holistic packet @${event.timestamp} ====");
+        dbgPrint("==== Got new holistic packet @${event.timestamp} ====");
         int index = 0;
         for (final element in event.landmarksList!) {
           //final oneHolistic = element as Map<String, List>;
-          print("Holistic landmark #$index count ${element.length}");
+          dbgPrint("Holistic landmark #$index count ${element.length}");
           element.forEach((type, list) {
             final int count = list.length ~/ 3;
-            print("$type landmarks count $count");
+            dbgPrint("$type landmarks count $count");
             final visibilityList = event.landmarksVisibility![index][type];
             for (int i = 0; i < list.length; i += 3) {
               final x = list[i + 0];
               final y = list[i + 1];
               final z = list[i + 2];
               final visibility = visibilityList[i ~/ 3];
-              print(" \"$type\": $x $y $z visibility: $visibility");
+              dbgPrint(" \"$type\": $x $y $z visibility: $visibility");
             }
           });
           index++;
@@ -98,18 +106,18 @@ class _MyAppState extends State<MyApp> {
       case LandmarkType.righthand:
       case LandmarkType.poseworld:
         // List<List>
-        print(
+        dbgPrint(
             "==== Got new ${event.landmarkType} packet @${event.timestamp} ====");
         for (final element in event.landmarksList!) {
           final int count = element.length ~/ 3;
-          print("${event.landmarkType} landmarks count $count");
+          dbgPrint("${event.landmarkType} landmarks count $count");
           final visibilityList = event.landmarksVisibility![0];
           for (int i = 0; i < element.length; i += 3) {
             final x = element[i + 0];
             final y = element[i + 1];
             final z = element[i + 2];
             final visibility = visibilityList[i ~/ 3];
-            print(
+            dbgPrint(
                 " \"${event.landmarkType}\": $x $y $z visibility: $visibility");
           }
         }
